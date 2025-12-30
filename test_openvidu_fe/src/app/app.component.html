@@ -78,9 +78,40 @@
     </header>
 
     <div id="main-layout">
-        <div id="video-area">
-            <div id="video-grid">
-                <!-- LOCAL VIDEO -->
+        <div id="video-area" [class.sharing-active]="!!screenedParticipant()">
+            @if (screenedParticipant()) {
+            <div id="screen-share-main">
+                <!-- Hiển thị màn hình của chính mình -->
+                @if (localScreenTrack()) {
+                <div class="main-screen-wrapper">
+                    <video-component
+                        [track]="localScreenTrack()!"
+                        [participantIdentity]="'Màn hình của bạn'"
+                        [local]="false"
+                        [isMicOn]="false"
+                    ></video-component>
+                    <div class="screen-label">Bạn đang chia sẻ màn hình</div>
+                </div>
+                }
+
+                <!-- Hiển thị màn hình của người khác -->
+                @for (entry of remoteTracksMap().values(); track entry.trackPublication.trackSid) { @if
+                (entry.trackPublication.source === 'screen_share') {
+                <div class="main-screen-wrapper">
+                    <video-component
+                        [track]="entry.trackPublication.videoTrack!"
+                        [participantIdentity]="entry.participantIdentity + ' (Màn hình)'"
+                        [local]="false"
+                        [isMicOn]="false"
+                    ></video-component>
+                    <div class="screen-label">Màn hình của {{ entry.participantIdentity }}</div>
+                </div>
+                } }
+            </div>
+            }
+
+            <div id="video-grid" [class.sidebar-grid]="!!screenedParticipant()">
+                <!-- LOCAL CAMERA -->
                 @if (localCamTrack()) {
                 <div class="video-wrapper local">
                     <video-component
@@ -96,9 +127,10 @@
                 </div>
                 }
 
-                <!-- REMOTE VIDEOS -->
+                <!-- REMOTE CAMERAS -->
                 @for (remoteTrack of remoteTracksMap().values(); track remoteTrack.trackPublication.trackSid) { @if
-                (remoteTrack.trackPublication.kind === 'video') {
+                (remoteTrack.trackPublication.kind === 'video' && remoteTrack.trackPublication.source !==
+                'screen_share') {
                 <div class="video-wrapper">
                     <video-component
                         [track]="remoteTrack.trackPublication.videoTrack!"
@@ -155,7 +187,9 @@
             </div>
         </div>
 
-        <aside id="side-panel">
+        <div class="side-resizer" (mousedown)="onResizeStart($event)" [class.resizing]="isResizing"></div>
+
+        <aside id="side-panel" [style.width.px]="sidePanelWidth()">
             <div class="panel-tabs">
                 <button class="tab-btn active">
                     <i class="fas fa-users me-2"></i>Thành viên ({{ participants().length }})

@@ -50,6 +50,7 @@ export class AppComponent implements OnDestroy {
     chatInput = '';
 
     localCamTrack = signal<LocalVideoTrack | undefined>(undefined);
+    localScreenTrack = signal<LocalVideoTrack | undefined>(undefined);
 
     isScreenSharing = false;
     private screenShareTracks: LocalTrack[] = [];
@@ -58,8 +59,13 @@ export class AppComponent implements OnDestroy {
     camAndShare = false;
     currentFacing: 'user' | 'environment' = 'user';
 
+    screenedParticipant = signal<string | undefined>(undefined);
+
     toasts = signal<{ id: number; message: string; type: 'info' | 'error' | 'success' }[]>([]);
     private toastId = 0;
+
+    sidePanelWidth = signal<number>(360);
+    isResizing = false;
 
     addToast(message: string, type: 'info' | 'error' | 'success' = 'info') {
         const id = this.toastId++;
@@ -224,11 +230,18 @@ export class AppComponent implements OnDestroy {
                         });
                         return next;
                     });
+
+                    if (publication.source === Track.Source.ScreenShare) {
+                        this.screenedParticipant.set(participant.identity);
+                    }
                 }
             }
         );
 
         room.on(RoomEvent.TrackUnsubscribed, (_track: RemoteTrack, publication: RemoteTrackPublication) => {
+            if (publication.source === Track.Source.ScreenShare) {
+                this.screenedParticipant.set(undefined);
+            }
             this.remoteTracksMap.update((prev) => {
                 const next = new Map(prev);
                 next.delete(publication.trackSid);
@@ -500,6 +513,30 @@ export class AppComponent implements OnDestroy {
         this.camAndShare = this.isCameraOn || this.isScreenSharing;
     }
 
+    // ===== Resizing Logic =====
+    onResizeStart(event: MouseEvent) {
+        this.isResizing = true;
+        document.body.classList.add('resizing-active');
+        event.preventDefault();
+    }
+
+    @HostListener('window:mousemove', ['$event'])
+    onResizeMove(event: MouseEvent) {
+        if (!this.isResizing) return;
+        const newWidth = window.innerWidth - event.clientX;
+        if (newWidth > 250 && newWidth < 800) {
+            this.sidePanelWidth.set(newWidth);
+        }
+    }
+
+    @HostListener('window:mouseup')
+    onResizeEnd() {
+        if (this.isResizing) {
+            this.isResizing = false;
+            document.body.classList.remove('resizing-active');
+        }
+    }
+
     // ===== Chat =====
     async sendMessage() {
         if (!this.chatInput.trim() || !this.room()) return;
@@ -569,6 +606,10 @@ export class AppComponent implements OnDestroy {
 
             for (const t of this.screenShareTracks) {
                 await r.localParticipant.publishTrack(t);
+                if (t.kind === Track.Kind.Video) {
+                    this.localScreenTrack.set(t as LocalVideoTrack);
+                    this.screenedParticipant.set(r.localParticipant.identity);
+                }
                 const mst = (t as LocalVideoTrack).mediaStreamTrack ?? (t as any).mediaStreamTrack;
                 if (mst) {
                     mst.addEventListener(
@@ -605,6 +646,8 @@ export class AppComponent implements OnDestroy {
             } catch {}
         }
         this.screenShareTracks = [];
+        this.localScreenTrack.set(undefined);
+        this.screenedParticipant.set(undefined);
         this.isScreenSharing = false;
     }
 
