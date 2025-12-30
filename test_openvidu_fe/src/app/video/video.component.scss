@@ -1,0 +1,84 @@
+:host {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #0f172a;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &.local-video video {
+        transform: scaleX(-1);
+    }
+
+    &:hover {
+        transform: scale(1.01);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+    }
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.participant-overlay {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 6px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: calc(100% - 24px);
+}
+
+.device-status {
+    margin-left: auto;
+    font-size: 0.8rem;
+
+    .text-danger {
+        color: #ef4444;
+    }
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #10b981;
+}
+
+.participant-name {
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* responsive adjustments */
+@media screen and (max-width: 480px) {
+    .participant-overlay {
+        bottom: 8px;
+        left: 8px;
+        padding: 4px 10px;
+    }
+}

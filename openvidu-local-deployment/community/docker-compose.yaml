@@ -1,0 +1,9 @@
+include:
+  - docker-compose.infra.yml
+  - docker-compose.core.yml
+  - docker-compose.apps.yml
+  - docker-compose.streaming.yml
+
+networks:
+  default:
+    name: openvidu-community

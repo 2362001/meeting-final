@@ -1,0 +1,88 @@
+services:
+  redis:
+    image: docker.io/redis:8.2.2-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - 6379:6379
+    volumes:
+      - redis:/data
+      - /etc/localtime:/etc/localtime:ro
+    command: >
+      redis-server
+      --bind 0.0.0.0
+      --requirepass ${REDIS_PASSWORD:-}
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
+  minio:
+    image: docker.io/openvidu/minio:2025.9.7-debian-12-r3
+    container_name: minio
+    restart: unless-stopped
+    ports:
+      - 9000:9000
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-}
+      - MINIO_DEFAULT_BUCKETS=openvidu-appdata
+      - MINIO_CONSOLE_SUBPATH=/minio-console
+      - MINIO_BROWSER=on
+      - MINIO_BROWSER_REDIRECT_URL=http://localhost:7880/minio-console
+    volumes:
+      - minio-data:/bitnami/minio/data
+      - minio-certs:/certs
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
+  mongo:
+    image: docker.io/openvidu/mongodb:8.0.15-r0
+    container_name: mongo
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo-data:/bitnami/mongodb
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - MONGODB_ROOT_USER=${MONGO_ADMIN_USERNAME:-}
+      - MONGODB_ROOT_PASSWORD=${MONGO_ADMIN_PASSWORD:-}
+      - MONGODB_ADVERTISED_HOSTNAME=mongo
+      - MONGODB_REPLICA_SET_MODE=primary
+      - MONGODB_REPLICA_SET_NAME=rs0
+      - MONGODB_REPLICA_SET_KEY=devreplicasetkey
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
+  setup:
+    image: docker.io/busybox:1.37.0
+    container_name: setup
+    restart: "no"
+    volumes:
+      - minio-data:/minio
+      - mongo-data:/mongo
+      - egress-data:/egress
+      - ./scripts/setup.sh:/scripts/setup.sh
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - USE_HTTPS=${USE_HTTPS:-false}
+      - LAN_MODE=${LAN_MODE:-false}
+      - LAN_PRIVATE_IP=${LAN_PRIVATE_IP:-}
+      - RUN_WITH_SCRIPT=${RUN_WITH_SCRIPT:-false}
+    user: root
+    command: /bin/sh /scripts/setup.sh
+
+volumes:
+  redis:
+    name: openvidu-redis
+  minio-data:
+    name: openvidu-minio-data
+  mongo-data:
+    name: openvidu-mongo-data
+  egress-data:
+    name: openvidu-egress-data
+  minio-certs:
+    name: openvidu-minio-certs

@@ -1,0 +1,19 @@
+<div class="video-container" [class.local-video]="local()">
+    <video #videoElement [id]="track().sid" autoplay playsinline [muted]="local()"></video>
+
+    <div class="participant-overlay">
+        <div class="status-dot"></div>
+        <span class="participant-name">
+            {{ participantIdentity() }}
+            <span *ngIf="local()"> (Bạn)</span>
+        </span>
+        <div class="device-status ms-auto">
+            <i
+                class="fas"
+                [class.fa-microphone]="isMicOn()"
+                [class.fa-microphone-slash]="!isMicOn()"
+                [class.text-danger]="!isMicOn()"
+            ></i>
+        </div>
+    </div>
+</div>

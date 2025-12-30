@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: basic-java
+
+server:
+  port: ${SERVER_PORT:6080}
+  ssl:
+    enabled: false
+
+# LiveKit configuration
+livekit:
+  api:
+    key: ${LIVEKIT_API_KEY:devkey}
+    secret: ${LIVEKIT_API_SECRET:secret}

@@ -1,0 +1,112 @@
+services:
+  caddy-proxy:
+    image: docker.io/openvidu/openvidu-caddy-local:3.5.0
+    container_name: caddy-proxy
+    restart: unless-stopped
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    environment:
+      - LAN_DOMAIN=${LAN_DOMAIN:-}
+      - LAN_PRIVATE_IP=${LAN_PRIVATE_IP:-}
+      - LAN_MODE=${LAN_MODE:-false}
+      - USE_HTTPS=${USE_HTTPS:-false}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-}
+      - DASHBOARD_ADMIN_USERNAME=${DASHBOARD_ADMIN_USERNAME:-}
+      - DASHBOARD_ADMIN_PASSWORD=${DASHBOARD_ADMIN_PASSWORD:-}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-}
+      - MEET_INITIAL_ADMIN_USER=${MEET_INITIAL_ADMIN_USER:-}
+      - MEET_INITIAL_ADMIN_PASSWORD=${MEET_INITIAL_ADMIN_PASSWORD:-}
+      - MEET_INITIAL_API_KEY=${MEET_INITIAL_API_KEY:-}
+    volumes:
+      - ./custom-layout:/var/www/custom-layout
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 5443:5443
+      - 6443:6443
+      - 7443:7443
+      - 7880:7880
+      - 9443:9443
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
+  openvidu:
+    image: docker.io/openvidu/openvidu-server:3.5.0
+    restart: unless-stopped
+    container_name: openvidu
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    environment:
+      - LAN_PRIVATE_IP=${LAN_PRIVATE_IP:-}
+      - LAN_MODE=${LAN_MODE:-false}
+    ports:
+      - 3478:3478/udp
+      - 7881:7881/tcp
+      - 7900-7999:7900-7999/udp
+    entrypoint: /bin/sh /scripts/entrypoint.sh
+    command: --config /etc/livekit.yaml
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml
+      - ./scripts/entrypoint_openvidu.sh:/scripts/entrypoint.sh
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
+  operator:
+    image: docker.io/openvidu/openvidu-operator:3.5.0
+    container_name: operator
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - agents-config:/agents-config
+      - ./:/deployment
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - MODE=agent-manager-local
+      - DEPLOYMENT_FILES_DIR=/deployment
+      - AGENTS_CONFIG_DIR=/agents-config
+      - NETWORK_NAME=openvidu-community
+      - AGENTS_CONFIG_VOLUME=openvidu-agents-config
+      - LIVEKIT_URL=ws://openvidu:7880/
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-}
+      - REDIS_ADDRESS=redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
+  ready-check:
+    image: docker.io/openvidu/openvidu-operator:3.5.0
+    container_name: ready-check
+    restart: on-failure
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - MODE=local-ready-check
+      - OPENVIDU_ENVIRONMENT=local-platform
+      - USE_HTTPS=${USE_HTTPS:-false}
+      - LAN_DOMAIN=${LAN_DOMAIN:-}
+      - LAN_MODE=${LAN_MODE:-false}
+      - LAN_PRIVATE_IP=${LAN_PRIVATE_IP:-}
+      - DASHBOARD_ADMIN_USERNAME=${DASHBOARD_ADMIN_USERNAME:-}
+      - DASHBOARD_ADMIN_PASSWORD=${DASHBOARD_ADMIN_PASSWORD:-}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-}
+      - MEET_INITIAL_ADMIN_USER=${MEET_INITIAL_ADMIN_USER:-}
+      - MEET_INITIAL_ADMIN_PASSWORD=${MEET_INITIAL_ADMIN_PASSWORD:-}
+      - MEET_INITIAL_API_KEY=${MEET_INITIAL_API_KEY:-}
+    depends_on:
+      - openvidu
+      - dashboard
+      - minio
+      - mongo
+
+volumes:
+  agents-config:
+    name: openvidu-agents-config

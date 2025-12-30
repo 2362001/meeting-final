@@ -1,0 +1,265 @@
+<div class="toast-container">
+    @for (toast of toasts(); track toast.id) {
+    <div class="toast-item" [class]="toast.type">
+        <i
+            class="fas"
+            [class.fa-info-circle]="toast.type === 'info'"
+            [class.fa-check-circle]="toast.type === 'success'"
+            [class.fa-exclamation-circle]="toast.type === 'error'"
+        ></i>
+        <span>{{ toast.message }}</span>
+    </div>
+    }
+</div>
+
+<div class="bg-gradient"></div>
+<div class="bg-mesh"></div>
+
+@if (!room()) {
+<div id="join" class="container-fluid animate-fade-in">
+    <div id="join-card">
+        <div class="card-header text-center">
+            <div class="logo-wrapper mb-3">
+                <i class="fas fa-video fa-3x text-primary animate-bounce"></i>
+            </div>
+            <h2 class="title-gradient">Tham gia phòng họp</h2>
+            <p class="text-muted">Kết nối với đồng nghiệp của bạn ngay lập tức</p>
+        </div>
+
+        <form [formGroup]="roomForm" (ngSubmit)="joinRoom()" class="mt-4">
+            <div class="input-group-custom mb-4">
+                <label for="participant-name"><i class="fas fa-user me-2"></i>Tên của bạn</label>
+                <input
+                    formControlName="participantName"
+                    id="participant-name"
+                    class="form-input"
+                    type="text"
+                    placeholder="Nhập tên của bạn..."
+                />
+            </div>
+
+            <div class="input-group-custom mb-4">
+                <label for="room-name"><i class="fas fa-door-open me-2"></i>Tên phòng</label>
+                <input
+                    formControlName="roomName"
+                    id="room-name"
+                    class="form-input"
+                    type="text"
+                    placeholder="Nhập tên phòng..."
+                />
+            </div>
+
+            <button class="btn-join" type="submit" [disabled]="!roomForm.valid">
+                <span>Tham gia ngay</span>
+                <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+        </form>
+    </div>
+</div>
+} @else {
+<div id="room" class="animate-fade-in">
+    <header id="room-nav">
+        <div class="room-info">
+            <div class="room-icon"><i class="fas fa-users"></i></div>
+            <h2 id="room-title">{{ roomForm.value.roomName }}</h2>
+        </div>
+
+        <div class="session-timer">
+            <i class="fas fa-circle text-danger animate-pulse me-2"></i>
+            <span>Đang diễn ra</span>
+        </div>
+
+        <div class="nav-actions">
+            <button class="btn-nav btn-danger-soft" (click)="leaveRoom()" title="Rời phòng">
+                <i class="fas fa-phone-slash"></i>
+                <span>Rời phòng</span>
+            </button>
+        </div>
+    </header>
+
+    <div id="main-layout">
+        <div id="video-area">
+            <div id="video-grid">
+                <!-- LOCAL VIDEO -->
+                @if (localCamTrack()) {
+                <div class="video-wrapper local">
+                    <video-component
+                        [track]="localCamTrack()!"
+                        [participantIdentity]="
+                            room()!.localParticipant.name ?? room()!.localParticipant.identity ?? 'me'
+                        "
+                        [local]="true"
+                        [isMicOn]="isMicOn"
+                    >
+                    </video-component>
+                    <div class="video-label">Bạn (Tôi)</div>
+                </div>
+                }
+
+                <!-- REMOTE VIDEOS -->
+                @for (remoteTrack of remoteTracksMap().values(); track remoteTrack.trackPublication.trackSid) { @if
+                (remoteTrack.trackPublication.kind === 'video') {
+                <div class="video-wrapper">
+                    <video-component
+                        [track]="remoteTrack.trackPublication.videoTrack!"
+                        [participantIdentity]="remoteTrack.participantIdentity"
+                        [local]="false"
+                        [isMicOn]="getParticipantMicStatus(remoteTrack.participantIdentity)"
+                    ></video-component>
+                    <div class="video-label">{{ remoteTrack.participantIdentity }}</div>
+                </div>
+                } @else if (remoteTrack.trackPublication.kind === 'audio') {
+                <audio-component [track]="remoteTrack.trackPublication.audioTrack!"></audio-component>
+                } }
+            </div>
+
+            <!-- FLOATING CONTROLS -->
+            <div id="controls-bar">
+                <div class="controls-group">
+                    <button
+                        class="btn-control"
+                        [class.active]="isMicOn"
+                        (click)="toggleMic()"
+                        [title]="isMicOn ? 'Tắt Mic' : 'Bật Mic'"
+                    >
+                        <i class="fas" [class.fa-microphone]="isMicOn" [class.fa-microphone-slash]="!isMicOn"></i>
+                    </button>
+                    <button
+                        class="btn-control"
+                        [class.active]="isCameraOn"
+                        (click)="toggleCamera()"
+                        [title]="isCameraOn ? 'Tắt Camera' : 'Bật Camera'"
+                    >
+                        <i class="fas" [class.fa-video]="isCameraOn" [class.fa-video-slash]="!isCameraOn"></i>
+                    </button>
+                </div>
+
+                <div class="controls-group">
+                    <button
+                        class="btn-control"
+                        [class.active]="isScreenSharing"
+                        (click)="toggleScreenShare()"
+                        title="Chia sẻ màn hình"
+                    >
+                        <i class="fas fa-desktop"></i>
+                    </button>
+                    <button
+                        class="btn-control"
+                        [class.active]="isRecording"
+                        (click)="isRecording ? stopRecording() : startRecording('screenShare')"
+                        [title]="isRecording ? 'Dừng ghi' : 'Ghi màn hình'"
+                    >
+                        <i class="fas fa-record-vinyl" [class.text-danger]="isRecording"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <aside id="side-panel">
+            <div class="panel-tabs">
+                <button class="tab-btn active">
+                    <i class="fas fa-users me-2"></i>Thành viên ({{ participants().length }})
+                </button>
+            </div>
+
+            <div id="participants-list">
+                @for (p of participants(); track p) {
+                <div class="participant-item">
+                    <div class="p-avatar">{{ p.substring(0, 1).toUpperCase() }}</div>
+                    <div class="p-info">
+                        <span class="p-name">{{ p }} @if(p === room()?.localParticipant?.identity) { (Bạn) }</span>
+                        <div class="p-devices">
+                            <i
+                                class="fas"
+                                [class.fa-microphone]="getParticipantMicStatus(p)"
+                                [class.fa-microphone-slash]="!getParticipantMicStatus(p)"
+                                [class.text-success]="getParticipantMicStatus(p)"
+                                [class.text-danger]="!getParticipantMicStatus(p)"
+                            ></i>
+                            <i
+                                class="fas ms-2"
+                                [class.fa-video]="getParticipantCamStatus(p)"
+                                [class.fa-video-slash]="!getParticipantCamStatus(p)"
+                                [class.text-success]="getParticipantCamStatus(p)"
+                                [class.text-danger]="!getParticipantCamStatus(p)"
+                            ></i>
+                        </div>
+                    </div>
+                </div>
+                }
+            </div>
+
+            <div class="panel-tabs border-top mt-2">
+                <button class="tab-btn active"><i class="fas fa-comments me-2"></i>Trò chuyện</button>
+            </div>
+
+            <div id="chat-container">
+                <div id="chat-messages">
+                    @if (messages().length === 0) {
+                    <div class="empty-chat">
+                        <i class="fas fa-comment-dots mb-2"></i>
+                        <p>Bắt đầu cuộc trò chuyện...</p>
+                    </div>
+                    } @for (msg of messages(); track $index) {
+                    <div
+                        class="message-item"
+                        [class.system]="msg.from === 'Hệ thống'"
+                        [class.own]="msg.from === roomForm.value.participantName"
+                    >
+                        <div class="msg-bubble">
+                            <div class="msg-info" *ngIf="msg.from !== 'Hệ thống'">
+                                <span class="msg-author">{{ msg.from }}</span>
+                            </div>
+                            <div class="msg-text">{{ msg.text }}</div>
+                        </div>
+                    </div>
+                    }
+                </div>
+
+                <div id="chat-input-area">
+                    <form (ngSubmit)="sendMessage()" class="chat-form">
+                        <div class="input-wrapper">
+                            <input
+                                type="text"
+                                [(ngModel)]="chatInput"
+                                name="chatInput"
+                                placeholder="Gửi tin nhắn..."
+                                required
+                            />
+                            <button type="submit" class="btn-send" [disabled]="!chatInput">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="file-upload-zone">
+                        <label for="file-upload" class="file-label">
+                            <i class="fas fa-paperclip"></i>
+                            <input id="file-upload" type="file" (change)="onFilePicked($event)" hidden />
+                        </label>
+                        <div class="file-list-compact" *ngIf="receivedFiles().length > 0">
+                            <span class="badge bg-primary">{{ receivedFiles().length }} tệp đã nhận</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="files-panel" class="mt-3" *ngIf="receivedFiles().length > 0">
+                <h6 class="text-muted px-3"><i class="fas fa-file-alt me-2"></i>Tệp đính kèm</h6>
+                <div class="file-list">
+                    @for (f of receivedFiles(); track f.id) {
+                    <div class="file-item">
+                        <div class="file-icon"><i class="fas fa-file"></i></div>
+                        <div class="file-info">
+                            <a [href]="f.url" [download]="f.name" class="file-name">{{ f.name }}</a>
+                            <span class="file-meta">{{ f.from }} • {{ f.size / 1024 | number : "1.0-0" }} KB</span>
+                        </div>
+                        <a [href]="f.url" [download]="f.name" class="btn-download"><i class="fas fa-download"></i></a>
+                    </div>
+                    }
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+}
