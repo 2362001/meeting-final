@@ -1,6 +1,10 @@
 @echo off
+REM Tắt hiển thị các dòng lệnh thực thi
 setlocal enabledelayedexpansion
+REM Kích hoạt Delayed Expansion để lấy giá trị biến chính xác trong khối lệnh IF/FOR
 chcp 65001 >nul
+REM Chuyển bảng mã CMD sang UTF-8
+
 echo ============================================
 echo KHỞI ĐỘNG MINIO (CHẾ ĐỘ TẠM THỜI)
 echo ============================================
@@ -8,7 +12,7 @@ echo.
 echo [!] LƯU Ý: Đóng cửa sổ này sẽ TỰ ĐỘNG TẮT MinIO.
 echo.
 
-REM Load cấu hình từ thư mục cha
+REM Load cấu hình từ file config.bat ở thư mục cha
 call "%~dp0..\config.bat"
 
 echo [1/3] Kiểm tra Docker Network...
@@ -18,6 +22,7 @@ if !errorlevel! neq 0 (
 )
 
 echo [2/3] Kiểm tra Docker Volumes...
+REM MinIO lưu trữ file ghi hình (recordings) nên cần volume persistent
 docker volume inspect openvidu-minio-data >nul 2>&1 || docker volume create openvidu-minio-data
 docker volume inspect openvidu-minio-certs >nul 2>&1 || docker volume create openvidu-minio-certs
 
@@ -25,12 +30,15 @@ echo [3/3] Đang khởi chạy MinIO...
 echo --------------------------------------------
 echo 📊 Thông tin truy cập:
 echo    S3 API Port: 9000
-echo    Console URL: http://localhost:7880/minio-console (cần Caddy)
+echo    Console URL: http://localhost:7880/minio-console (cần Caddy Proxy)
 echo    Access Key: %MINIO_ACCESS_KEY%
 echo    Secret Key: %MINIO_SECRET_KEY%
 echo --------------------------------------------
 echo.
 
+REM Chạy Docker Container:
+REM MINIO_DEFAULT_BUCKETS: Tự động tạo folder openvidu-appdata khi khởi động
+REM MINIO_BROWSER_REDIRECT_URL: Đường dẫn để truy cập giao diện web qua Proxy
 docker run --rm ^
   --name minio ^
   --network %NETWORK_NAME% ^

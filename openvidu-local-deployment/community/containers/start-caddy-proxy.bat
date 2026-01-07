@@ -1,6 +1,10 @@
 @echo off
+REM Tắt hiển thị các dòng kinh thực thi
 setlocal enabledelayedexpansion
+REM Kích hoạt Delayed Expansion để lấy giá trị biến chính xác trong khối lệnh IF/FOR
 chcp 65001 >nul
+REM Chuyển bảng mã CMD sang UTF-8
+
 echo ============================================
 echo KHỞI ĐỘNG CADDY PROXY (CHẾ ĐỘ TẠM THỜI)
 echo ============================================
@@ -8,8 +12,9 @@ echo.
 echo [!] LƯU Ý: Đóng cửa sổ này sẽ TỰ ĐỘNG TẮT Gateway (Caddy).
 echo.
 
-REM Load cấu hình từ thư mục cha
+REM Load cấu hình từ file config.bat ở thư mục cha
 call "%~dp0..\config.bat"
+REM Xác định thư mục cha để lấy custom-layout
 set PARENT_DIR=%~dp0..
 
 echo [1/2] Kiểm tra Docker Network...
@@ -27,6 +32,9 @@ echo    WebRTC Webskt: ws://localhost:7880
 echo --------------------------------------------
 echo.
 
+REM Chạy Docker Container:
+REM Caddy đóng vai trò Reverse Proxy, định tuyến tất cả request từ cổng 7880/443
+REM vào các container bên trong (Dashboard, Minio, Server...)
 docker run --rm ^
   --name caddy-proxy ^
   --network %NETWORK_NAME% ^

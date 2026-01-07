@@ -1,6 +1,10 @@
 @echo off
+REM Tắt hiển thị các dòng lệnh thực thi
 setlocal enabledelayedexpansion
+REM Kích hoạt Delayed Expansion để lấy giá trị biến chính xác trong khối lệnh IF/FOR
 chcp 65001 >nul
+REM Chuyển bảng mã CMD sang UTF-8
+
 echo ============================================
 echo KHỞI ĐỘNG OPENVIDU MEET (CHẾ ĐỘ TẠM THỜI)
 echo ============================================
@@ -8,7 +12,7 @@ echo.
 echo [!] LƯU Ý: Đóng cửa sổ này sẽ TỰ ĐỘNG TẮT App Meet.
 echo.
 
-REM Load cấu hình từ thư mục cha
+REM Load cấu hình từ file config.bat ở thư mục cha
 call "%~dp0..\config.bat"
 set PARENT_DIR=%~dp0..
 
@@ -24,6 +28,9 @@ echo    Pass: %MEET_INITIAL_ADMIN_PASSWORD%
 echo --------------------------------------------
 echo.
 
+REM Chạy Docker Container:
+REM Ứng dụng họp mẫu tích hợp sâu với Server (WebRTC), Redis (Session),
+REM MongoDB (User/History) và MinIO (Recordings)
 docker run --rm ^
   --name openvidu-meet ^
   --network %NETWORK_NAME% ^
