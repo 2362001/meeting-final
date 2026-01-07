@@ -1,4 +1,8 @@
 services:
+  # ==========================================
+  # REDIS - Bộ nhớ đệm & Quản lý Session
+  # ==========================================
+  # OpenVidu dùng Redis để quản lý trạng thái phòng họp và message bus giữa các node.
   redis:
     image: docker.io/redis:8.2.2-alpine
     container_name: redis
@@ -11,11 +15,15 @@ services:
     command: >
       redis-server
       --bind 0.0.0.0
-      --requirepass ${REDIS_PASSWORD:-}
+      --requirepass ${REDIS_PASSWORD:-} # Mật khẩu Redis (mặc định rỗng nếu dev)
     depends_on:
       setup:
         condition: service_completed_successfully
 
+  # ==========================================
+  # MINIO - Object Storage (Giống Amazon S3)
+  # ==========================================
+  # Dùng để lưu trữ các file ghi âm, ghi hình (Recording) và các file dữ liệu khác.
   minio:
     image: docker.io/openvidu/minio:2025.9.7-debian-12-r3
     container_name: minio
@@ -23,20 +31,24 @@ services:
     ports:
       - 9000:9000
     environment:
-      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-}
-      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-}
-      - MINIO_DEFAULT_BUCKETS=openvidu-appdata
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-} # User đăng nhập MinIO Dashboard
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-} # Password đăng nhập
+      - MINIO_DEFAULT_BUCKETS=openvidu-appdata # Tự tạo bucket mặc định
       - MINIO_CONSOLE_SUBPATH=/minio-console
       - MINIO_BROWSER=on
       - MINIO_BROWSER_REDIRECT_URL=http://localhost:7880/minio-console
     volumes:
-      - minio-data:/bitnami/minio/data
+      - minio-data:/bitnami/minio/data # Nơi lưu dữ liệu thật trên ổ cứng
       - minio-certs:/certs
       - /etc/localtime:/etc/localtime:ro
     depends_on:
       setup:
         condition: service_completed_successfully
 
+  # ==========================================
+  # MONGODB - Cơ sở dữ liệu chính
+  # ==========================================
+  # Lưu trữ thông tin người dùng, cấu hình, lịch sử phòng họp... của OpenVidu Ingress/Egress/Dashboard.
   mongo:
     image: docker.io/openvidu/mongodb:8.0.15-r0
     container_name: mongo
@@ -44,23 +56,27 @@ services:
     ports:
       - 27017:27017
     volumes:
-      - mongo-data:/bitnami/mongodb
+      - mongo-data:/bitnami/mongodb # Persist dữ liệu
       - /etc/localtime:/etc/localtime:ro
     environment:
       - MONGODB_ROOT_USER=${MONGO_ADMIN_USERNAME:-}
       - MONGODB_ROOT_PASSWORD=${MONGO_ADMIN_PASSWORD:-}
       - MONGODB_ADVERTISED_HOSTNAME=mongo
-      - MONGODB_REPLICA_SET_MODE=primary
+      - MONGODB_REPLICA_SET_MODE=primary # Chạy chế độ Replica Set (cần thiết cho một số tính năng transaction)
       - MONGODB_REPLICA_SET_NAME=rs0
       - MONGODB_REPLICA_SET_KEY=devreplicasetkey
     depends_on:
       setup:
         condition: service_completed_successfully
 
+  # ==========================================
+  # SETUP SERVICE - Khởi tạo môi trường
+  # ==========================================
+  # Container này chỉ chạy 1 lần lúc đầu để thiết lập permissions, tạo folder cần thiết.
   setup:
     image: docker.io/busybox:1.37.0
     container_name: setup
-    restart: "no"
+    restart: "no" # Không tự khởi động lại sau khi chạy xong
     volumes:
       - minio-data:/minio
       - mongo-data:/mongo
@@ -73,7 +89,7 @@ services:
       - LAN_PRIVATE_IP=${LAN_PRIVATE_IP:-}
       - RUN_WITH_SCRIPT=${RUN_WITH_SCRIPT:-false}
     user: root
-    command: /bin/sh /scripts/setup.sh
+    command: /bin/sh /scripts/setup.sh # Chạy script setup
 
 volumes:
   redis:

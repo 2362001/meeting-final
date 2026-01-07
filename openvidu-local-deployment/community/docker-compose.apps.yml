@@ -1,4 +1,8 @@
 services:
+  # ==========================================
+  # OPENVIDU DASHBOARD - Trang quản trị
+  # ==========================================
+  # Giao diện web để quản lý Rooms, Users, xem logs, kiểm tra trạng thái recording...
   dashboard:
     image: docker.io/openvidu/openvidu-dashboard:3.5.0
     container_name: dashboard
@@ -14,12 +18,17 @@ services:
       setup:
         condition: service_completed_successfully
 
+  # ==========================================
+  # OPENVIDU MEET - Ứng dụng họp mẫu (Giống Google Meet)
+  # ==========================================
+  # Một web app hoàn chỉnh được tích hợp sẵn để demo hoặc sử dụng ngay.
+  # Nếu bạn viết Frontend riêng thì có thể không cần cái này.
   openvidu-meet:
     image: docker.io/openvidu/openvidu-meet:3.5.0
     container_name: openvidu-meet
     restart: on-failure
     ports:
-      - 9080:6080
+      - 9080:6080 # Truy cập qua port 9080
     extra_hosts:
       - host.docker.internal:host-gateway
     environment:

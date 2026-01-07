@@ -1,4 +1,9 @@
 services:
+  # ==========================================
+  # CADDY PROXY - Web Server & Gateway
+  # ==========================================
+  # Đóng vai trò Reverse Proxy, định tuyến request đến đúng service (OpenVidu, MinIO, Dashboard...).
+  # Cũng xử lý SSL/HTTPS tự động nếu cấu hình.
   caddy-proxy:
     image: docker.io/openvidu/openvidu-caddy-local:3.5.0
     container_name: caddy-proxy
@@ -10,7 +15,7 @@ services:
       - LAN_PRIVATE_IP=${LAN_PRIVATE_IP:-}
       - LAN_MODE=${LAN_MODE:-false}
       - USE_HTTPS=${USE_HTTPS:-false}
-      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-} # Key giao tiếp với OpenVidu
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-}
       - DASHBOARD_ADMIN_USERNAME=${DASHBOARD_ADMIN_USERNAME:-}
       - DASHBOARD_ADMIN_PASSWORD=${DASHBOARD_ADMIN_PASSWORD:-}
@@ -26,12 +31,16 @@ services:
       - 5443:5443
       - 6443:6443
       - 7443:7443
-      - 7880:7880
+      - 7880:7880 # Cổng chính cho WebRTC signaling (WebSocket)
       - 9443:9443
     depends_on:
       setup:
         condition: service_completed_successfully
 
+  # ==========================================
+  # OPENVIDU SERVER (LiveKit) - Core Engine
+  # ==========================================
+  # Trái tim của hệ thống. Xử lý logic WebRTC, Audio/Video routing, Selective Forwarding Unit (SFU).
   openvidu:
     image: docker.io/openvidu/openvidu-server:3.5.0
     restart: unless-stopped
@@ -42,11 +51,11 @@ services:
       - LAN_PRIVATE_IP=${LAN_PRIVATE_IP:-}
       - LAN_MODE=${LAN_MODE:-false}
     ports:
-      - 3478:3478/udp
+      - 3478:3478/udp # STUN/TURN server (giúp vượt NAT/Firewall)
       - 7881:7881/tcp
-      - 7900-7999:7900-7999/udp
+      - 7900-7999:7900-7999/udp # Dải port UDP để truyền media (RTP)
     entrypoint: /bin/sh /scripts/entrypoint.sh
-    command: --config /etc/livekit.yaml
+    command: --config /etc/livekit.yaml # File cấu hình LiveKit
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml
       - ./scripts/entrypoint_openvidu.sh:/scripts/entrypoint.sh
@@ -55,12 +64,16 @@ services:
       setup:
         condition: service_completed_successfully
 
+  # ==========================================
+  # OPERATOR - Quản lý Lifecycle
+  # ==========================================
+  # Quản lý các Agents AI, SIP trunking và các thành phần mở rộng khác.
   operator:
     image: docker.io/openvidu/openvidu-operator:3.5.0
     container_name: operator
     restart: unless-stopped
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock # Cần quyền Docker để spawn container con
       - agents-config:/agents-config
       - ./:/deployment
       - /etc/localtime:/etc/localtime:ro
@@ -79,6 +92,10 @@ services:
       setup:
         condition: service_completed_successfully
 
+  # ==========================================
+  # READY CHECK - Kiểm tra hệ thống
+  # ==========================================
+  # Script kiểm tra xem toàn bộ hệ thống đã khởi động thành công chưa.
   ready-check:
     image: docker.io/openvidu/openvidu-operator:3.5.0
     container_name: ready-check
