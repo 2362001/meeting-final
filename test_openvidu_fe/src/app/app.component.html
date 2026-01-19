@@ -39,14 +39,24 @@
                 </div>
 
                 <div class="input-group-custom mb-4">
-                    <label for="room-name"><i class="fas fa-door-open me-2"></i>Tên phòng</label>
-                    <input
-                        formControlName="roomName"
-                        id="room-name"
-                        class="form-input"
-                        type="text"
-                        placeholder="Nhập tên phòng..."
-                    />
+                    <label for="room-name"><i class="fas fa-door-open me-2"></i>Mã phòng / Link</label>
+                    <div class="input-with-action">
+                        <input
+                            formControlName="roomName"
+                            id="room-name"
+                            class="form-input"
+                            type="text"
+                            placeholder="Nhập mã phòng hoặc dán link..."
+                        />
+                        <button
+                            type="button"
+                            class="btn-action-small"
+                            (click)="generateNewRoomCode()"
+                            title="Tạo mã ngẫu nhiên"
+                        >
+                            <i class="fas fa-magic"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <button class="btn-join" type="submit" [disabled]="!roomForm.valid">
@@ -70,9 +80,13 @@
             </div>
 
             <div class="nav-actions">
+                <button class="btn-nav btn-glass" (click)="copyInviteLink()" title="Sao chép link mời">
+                    <i class="fas fa-link"></i>
+                    <span class="d-none d-md-inline">Sao chép link mời</span>
+                </button>
                 <button class="btn-nav btn-danger-soft" (click)="leaveRoom()" title="Rời phòng">
                     <i class="fas fa-phone-slash"></i>
-                    <span>Rời phòng</span>
+                    <span class="d-none d-md-inline">Rời phòng</span>
                 </button>
             </div>
         </header>

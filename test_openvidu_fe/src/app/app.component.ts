@@ -119,6 +119,44 @@ export class AppComponent implements OnDestroy {
 
     constructor(private httpClient: HttpClient) {
         this.configureUrls();
+        this.detectRoomFromUrl();
+    }
+
+    private detectRoomFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const roomName = params.get('room');
+        if (roomName) {
+            this.roomForm.patchValue({ roomName });
+        }
+    }
+
+    copyInviteLink() {
+        const roomName = this.roomForm.value.roomName;
+        if (!roomName) return;
+
+        const url = new URL(window.location.origin);
+        url.searchParams.set('room', roomName);
+
+        const inviteUrl = url.toString();
+
+        navigator.clipboard
+            .writeText(inviteUrl)
+            .then(() => {
+                this.addToast('Đã sao chép link mời tham gia!', 'success');
+            })
+            .catch(() => {
+                this.addToast('Không thể sao chép link', 'error');
+            });
+    }
+
+    generateNewRoomCode() {
+        const randomCode =
+            Math.random().toString(36).substring(2, 5) +
+            '-' +
+            Math.random().toString(36).substring(2, 6) +
+            '-' +
+            Math.random().toString(36).substring(2, 5);
+        this.roomForm.patchValue({ roomName: randomCode });
     }
     private configureUrls() {
         APPLICATION_SERVER_URL = 'http://127.0.0.1:6080/';

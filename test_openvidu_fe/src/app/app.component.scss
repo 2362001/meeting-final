@@ -181,6 +181,30 @@ body.resizing-active {
     }
 }
 
+.input-with-action {
+    display: flex;
+    gap: 8px;
+
+    .form-input {
+        flex: 1;
+    }
+}
+
+.btn-action-small {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: var(--primary);
+    width: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background: rgba(99, 102, 241, 0.1);
+        transform: scale(1.05);
+    }
+}
+
 .btn-join {
     width: 100%;
     background: var(--primary);
@@ -485,6 +509,27 @@ body.resizing-active {
         &:hover {
             background: rgba(239, 68, 68, 0.2);
         }
+    }
+
+    &.btn-glass {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(4px);
+        border: 1px solid var(--glass-border);
+        color: white;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    }
+}
+
+/* Responsive Utilities */
+.d-none {
+    display: none !important;
+}
+@media (min-width: 768px) {
+    .d-md-inline {
+        display: inline !important;
     }
 }
 
