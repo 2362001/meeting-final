@@ -1,9 +1,6 @@
 @echo off
-docker network inspect openvidu-community >nul 2>&1 || docker network create openvidu-community
-
 docker run --rm ^
   --name caddy-proxy ^
-  --network openvidu-community ^
   --add-host host.docker.internal:host-gateway ^
   -p 5443:5443 ^
   -p 6443:6443 ^

@@ -1,11 +1,10 @@
 @echo off
-docker network inspect openvidu-community >nul 2>&1 || docker network create openvidu-community
 docker volume inspect openvidu-minio-data >nul 2>&1 || docker volume create openvidu-minio-data
 docker volume inspect openvidu-minio-certs >nul 2>&1 || docker volume create openvidu-minio-certs
 
 docker run --rm ^
   --name minio ^
-  --network openvidu-community ^
+  --add-host host.docker.internal:host-gateway ^
   -p 9000:9000 ^
   -v openvidu-minio-data:/bitnami/minio/data ^
   -v openvidu-minio-certs:/certs ^

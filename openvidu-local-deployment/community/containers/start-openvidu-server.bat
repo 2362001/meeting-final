@@ -1,11 +1,9 @@
 @echo off
-docker network inspect openvidu-community >nul 2>&1 || docker network create openvidu-community
-
 docker run --rm ^
   --name openvidu ^
-  --network openvidu-community ^
   --add-host host.docker.internal:host-gateway ^
   -p 3478:3478/udp ^
+  -p 7880:7880 ^
   -p 7881:7881/tcp ^
   -p 7900-7999:7900-7999/udp ^
   -v "%~dp0..\livekit.yaml:/etc/livekit.yaml:ro" ^

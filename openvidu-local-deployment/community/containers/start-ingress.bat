@@ -1,9 +1,6 @@
 @echo off
-docker network inspect openvidu-community >nul 2>&1 || docker network create openvidu-community
-
 docker run --rm ^
   --name ingress ^
-  --network openvidu-community ^
   --add-host host.docker.internal:host-gateway ^
   -p 1935:1935 ^
   -p 8085:8085 ^
