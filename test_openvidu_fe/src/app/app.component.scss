@@ -32,6 +32,20 @@
     animation: pulse 2s infinite ease-in-out;
 }
 
+@keyframes bounceSmall {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+.animate-bounce-small {
+    animation: bounceSmall 0.8s infinite ease-in-out;
+}
+
 body.resizing-active {
     cursor: col-resize !important;
     user-select: none;
@@ -366,6 +380,15 @@ body.resizing-active {
         border-radius: 8px;
         font-size: 0.85rem;
         font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .hand-icon {
+            color: #fbbf24; // Amber color for visibility
+            font-size: 1rem;
+            animation: bounceSmall 1s infinite ease-in-out;
+        }
     }
 
     video-component {
@@ -430,6 +453,18 @@ body.resizing-active {
 
     &.btn-danger:hover {
         background: #dc2626;
+    }
+
+    &.btn-raise-hand {
+        &.active {
+            background: #fbbf24;
+            color: #000;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+        }
+
+        &:hover:not(.active) {
+            color: #fbbf24;
+        }
     }
 }
 

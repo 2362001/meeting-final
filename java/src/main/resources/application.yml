@@ -11,4 +11,4 @@ server:
 livekit:
   api:
     key: ${LIVEKIT_API_KEY:devkey}
-    secret: ${LIVEKIT_API_SECRET:secret}
+    secret: ${LIVEKIT_API_SECRET:devsecret_at_least_32_characters_long}

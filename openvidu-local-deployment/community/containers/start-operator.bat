@@ -14,7 +14,7 @@ docker run --rm ^
   -e AGENTS_CONFIG_VOLUME=openvidu-agents-config ^
   -e LIVEKIT_URL=ws://host.docker.internal:7880/ ^
   -e LIVEKIT_API_KEY=devkey ^
-  -e LIVEKIT_API_SECRET=secret ^
+  -e LIVEKIT_API_SECRET=devsecret_at_least_32_characters_long ^
   -e REDIS_ADDRESS=host.docker.internal:6379 ^
   -e REDIS_PASSWORD=redis_password_123 ^
   docker.io/openvidu/openvidu-operator:3.5.0

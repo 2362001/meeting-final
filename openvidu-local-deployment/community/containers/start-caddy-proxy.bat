@@ -13,7 +13,7 @@ docker run --rm ^
   -e LAN_MODE=false ^
   -e USE_HTTPS=false ^
   -e LIVEKIT_API_KEY=devkey ^
-  -e LIVEKIT_API_SECRET=secret ^
+  -e LIVEKIT_API_SECRET=devsecret_at_least_32_characters_long ^
   -e DASHBOARD_ADMIN_USERNAME=admin ^
   -e DASHBOARD_ADMIN_PASSWORD=admin ^
   -e MINIO_ACCESS_KEY=minioadmin ^

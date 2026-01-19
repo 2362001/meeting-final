@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  # 1. OpenVidu Server (LiveKit)
+  openvidu:
+    image: livekit/livekit-server:v1.9.8
+    restart: always
+    command: --config /etc/livekit.yaml
+    volumes:
+      - ./openvidu-local-deployment/community/livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "7880:7880" # HTTP/WebSocket
+      - "7881:7881" # WebRTC TCP
+      - "3478:3478/udp" # TURN
+      - "7900-7999:7900-7999/udp" # Media Range
+    environment:
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=devsecret_at_least_32_characters_long
+
+  # 2. Redis (Cần thiết cho OpenVidu)
+  redis:
+    image: redis:8.2.2-alpine
+    restart: always
+    command: redis-server --requirepass redis_password_123
+
+  # 3. MongoDB (Chỉ cần nếu bạn muốn dùng Analytics)
+  mongo:
+    image: bitnami/mongodb:8.0.15
+    restart: always
+    environment:
+      - MONGODB_ROOT_USER=admin
+      - MONGODB_ROOT_PASSWORD=mongo_password_123
+      - MONGODB_REPLICA_SET_MODE=primary
+      - MONGODB_REPLICA_SET_NAME=rs0
+      - MONGODB_REPLICA_SET_KEY=devreplicasetkey
+
+  # 4. Backend Java
+  backend:
+    build: ./java
+    restart: always
+    ports:
+      - "6080:6080"
+    environment:
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=devsecret_at_least_32_characters_long
+      - SERVER_PORT=6080
+    depends_on:
+      - openvidu
+      - mongo
+
+  # 5. Reverse Proxy (Caddy hoặc Nginx) - Để xử lý SSL/HTTPS
+  proxy:
+    image: caddy:2.7-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -20,7 +20,7 @@ docker run --rm ^
   -e MEET_INITIAL_WEBHOOK_URL=http://host.docker.internal:6080/webhook ^
   -e LIVEKIT_URL_PRIVATE=ws://host.docker.internal:7880/ ^
   -e LIVEKIT_API_KEY=devkey ^
-  -e LIVEKIT_API_SECRET=secret ^
+  -e LIVEKIT_API_SECRET=devsecret_at_least_32_characters_long ^
   -e MEET_S3_BUCKET=openvidu-appdata ^
   -e MEET_S3_SUBBUCKET=openvidu-meet ^
   -e MEET_S3_SERVICE_ENDPOINT=http://host.docker.internal:9000 ^

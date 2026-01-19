@@ -64,6 +64,8 @@ export class AppComponent implements OnDestroy {
     toasts = signal<{ id: number; message: string; type: 'info' | 'error' | 'success' }[]>([]);
     private toastId = 0;
 
+    raisedHands = signal<Set<string>>(new Set());
+
     sidePanelWidth = signal<number>(360);
     isResizing = false;
 
@@ -93,7 +95,7 @@ export class AppComponent implements OnDestroy {
             (t) =>
                 t.participantIdentity === identity &&
                 t.trackPublication.kind === 'video' &&
-                t.trackPublication.source === Track.Source.Camera
+                t.trackPublication.source === Track.Source.Camera,
         );
         return camTrack ? !camTrack.trackPublication.isMuted : false;
     }
@@ -196,6 +198,30 @@ export class AppComponent implements OnDestroy {
                 }
                 return;
             }
+
+            // hand raise signal
+            if (topic === 'hand-raise') {
+                try {
+                    const data = JSON.parse(new TextDecoder().decode(payload)) as { raised: boolean };
+                    const identity = participant?.identity;
+                    if (identity) {
+                        this.raisedHands.update((prev) => {
+                            const next = new Set(prev);
+                            if (data.raised) {
+                                next.add(identity);
+                                // Thêm toast thông báo khi có người giơ tay
+                                if (identity !== this.room()?.localParticipant.identity) {
+                                    this.addToast(`${participant?.name || identity} đang giơ tay phát biểu`, 'info');
+                                }
+                            } else {
+                                next.delete(identity);
+                            }
+                            return next;
+                        });
+                    }
+                } catch {}
+                return;
+            }
         });
 
         // ===== Remote tracks
@@ -218,7 +244,7 @@ export class AppComponent implements OnDestroy {
                 const isRenderableVideo =
                     publication.kind === 'video' &&
                     [Track.Source.Camera, Track.Source.ScreenShare, Track.Source.Unknown].includes(
-                        (publication.source as Track.Source) ?? Track.Source.Unknown
+                        (publication.source as Track.Source) ?? Track.Source.Unknown,
                     );
 
                 if (isRenderableVideo) {
@@ -235,7 +261,7 @@ export class AppComponent implements OnDestroy {
                         this.screenedParticipant.set(participant.identity);
                     }
                 }
-            }
+            },
         );
 
         room.on(RoomEvent.TrackUnsubscribed, (_track: RemoteTrack, publication: RemoteTrackPublication) => {
@@ -286,6 +312,13 @@ export class AppComponent implements OnDestroy {
             const id = p.name || p.identity;
             this.participants.update((list) => list.filter((x) => x !== id));
             this.messages.update((list) => [...list, { from: 'Hệ thống', text: `${id} đã rời phòng` }]);
+
+            // Xóa trạng thái giơ tay nếu họ thoát
+            this.raisedHands.update((prev) => {
+                const next = new Set(prev);
+                next.delete(p.identity);
+                return next;
+            });
         });
         room.on(RoomEvent.ParticipantNameChanged, (name, p) => {
             const id = p.identity;
@@ -547,6 +580,27 @@ export class AppComponent implements OnDestroy {
         this.chatInput = '';
     }
 
+    async toggleRaiseHand() {
+        const r = this.room();
+        if (!r) return;
+
+        const localId = r.localParticipant.identity;
+        const isCurrentlyRaised = this.raisedHands().has(localId);
+        const newState = !isCurrentlyRaised;
+
+        // Cập nhật local
+        this.raisedHands.update((prev) => {
+            const next = new Set(prev);
+            if (newState) next.add(localId);
+            else next.delete(localId);
+            return next;
+        });
+
+        // Gửi signal cho mọi người
+        const data = new TextEncoder().encode(JSON.stringify({ raised: newState }));
+        await r.localParticipant.publishData(data, { reliable: true, topic: 'hand-raise' });
+    }
+
     // ===== Leave / cleanup =====
     async leaveRoom() {
         if (this.isScreenSharing) await this.stopScreenShare();
@@ -577,7 +631,7 @@ export class AppComponent implements OnDestroy {
     // ===== Backend token =====
     private async getToken(roomName: string, participantName: string): Promise<string> {
         const res = await lastValueFrom(
-            this.httpClient.post<{ token: string }>(APPLICATION_SERVER_URL + 'token', { roomName, participantName })
+            this.httpClient.post<{ token: string }>(APPLICATION_SERVER_URL + 'token', { roomName, participantName }),
         );
         return res.token;
     }
@@ -618,7 +672,7 @@ export class AppComponent implements OnDestroy {
                             await this.stopScreenShare();
                             this.recomputeCamShareFlags();
                         },
-                        { once: true }
+                        { once: true },
                     );
                 }
             }
@@ -957,8 +1011,8 @@ export class AppComponent implements OnDestroy {
         const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
             ? 'video/webm;codecs=vp9,opus'
             : MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
-            ? 'video/webm;codecs=vp8,opus'
-            : 'video/webm';
+              ? 'video/webm;codecs=vp8,opus'
+              : 'video/webm';
 
         this.recordedBlobs = [];
         this.recorder = new MediaRecorder(finalStream, { mimeType: mime, videoBitsPerSecond: 4_000_000 });
